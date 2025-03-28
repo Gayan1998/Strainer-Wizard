@@ -1,8 +1,8 @@
 // API Configuration updated to work with PHP backend
 export const API_CONFIG = {
   // Base URL for all API requests - change to your backend path
-  BASE_URL: 'http://localhost/backend',
-  
+  BASE_URL: 'https://strainerwizard.prpl.com.au/backend',
+  //strainerwizard.prpl.com.au
   // Set to true to use mock data for development, false for production API calls
   USE_MOCK_DATA: false,
   

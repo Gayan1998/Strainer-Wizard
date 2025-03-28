@@ -13,6 +13,9 @@ const CardSelection = ({ stage, stageIndex }) => {
   // If first stage (strainer type), don't show custom option
   const isFirstStage = stageIndex === 0;
   
+  // Check if this is the materials stage
+  const isMaterialsStage = stageIndex === 1;
+  
   // Get fixed grid column classes based on stage configuration
   const getGridColClass = () => {
     // Use explicit column classes that Tailwind recognizes
@@ -124,6 +127,11 @@ const CardSelection = ({ stage, stageIndex }) => {
                   className="w-36 h-36 object-contain mb-5 transition-transform duration-200"
                 />
                 <h2 className="text-xl font-semibold text-gray-800">{option.name}</h2>
+                
+                {/* Display description for material options */}
+                {isMaterialsStage && option.description && (
+                  <p className="text-sm text-gray-600 mt-2">{option.description}</p>
+                )}
               </div>
             </div>
           ))}

@@ -15,9 +15,24 @@ export const stages = [
       type: 'cards',
       columns: 3,
       options: [
-        { id: 'stainless-steel', name: 'Stainless Steel', image: 'https://media.istockphoto.com/id/484048852/photo/metal-cube.jpg?s=612x612&w=0&k=20&c=aOQa80TqZfKgJR1_CgfsT8XL-0TUvnfWhoMrzxrzk2I=' },
-        { id: 'carbon-steel', name: 'Carbon Steel', image: '/api/placeholder/150/150' },
-        { id: 'cast-iron', name: 'Cast Iron', image: '/api/placeholder/150/150' }
+        { 
+          id: 'stainless-steel', 
+          name: 'Stainless Steel', 
+          image: 'https://media.istockphoto.com/id/484048852/photo/metal-cube.jpg?s=612x612&w=0&k=20&c=aOQa80TqZfKgJR1_CgfsT8XL-0TUvnfWhoMrzxrzk2I=',
+          description: 'Corrosion resistant and suitable for food, pharmaceutical, and chemical applications. Ideal for aggressive media.'
+        },
+        { 
+          id: 'carbon-steel', 
+          name: 'Carbon Steel', 
+          image: 'https://cdn11.bigcommerce.com/s-zgzol/images/stencil/1280x1280/products/51883/258495/united-scientific-steel-cube-1__34316.1728986818.jpg?c=2',
+          description: 'Cost-effective and strong with good thermal conductivity. Best for non-corrosive applications and high-temperature service.'
+        },
+        { 
+          id: 'cast-iron', 
+          name: 'Cast Iron', 
+          image: 'https://live.staticflickr.com/4058/4604173675_7e6d2eb027_b.jpg',
+          description: 'Excellent wear resistance and vibration dampening properties. Good for water, steam, and some chemical applications.'
+        }
       ]
     },
     {
@@ -25,10 +40,10 @@ export const stages = [
       type: 'cards',
       columns: 4,
       options: [
-        { id: 'flanged', name: 'Flanged', image: '/api/placeholder/150/150' },
-        { id: 'threaded', name: 'Threaded', image: '/api/placeholder/150/150' },
-        { id: 'welded', name: 'Welded', image: '/api/placeholder/150/150' },
-        { id: 'grooved', name: 'Grooved', image: '/api/placeholder/150/150' }
+        { id: 'flanged', name: 'Flanged', image: 'https://www.diflon.it/images/diflon/prodotti/flexiline/c2-61_main-frame.jpg' },
+        { id: 'threaded', name: 'Threaded', image: 'https://image.made-in-china.com/2f0j00oTQqLVhluzuI/Hot-Stainless-Steel-Street-Socket-Threaded-Connection.jpg' },
+        { id: 'welded', name: 'Welded', image: 'src\\assets\\weld-socket.png' },
+        { id: 'grooved', name: 'Grooved', image: 'https://www.victaulic.com/wp-content/uploads/2017/04/Style-177N-Cutaway.png' }
       ]
     },
     {

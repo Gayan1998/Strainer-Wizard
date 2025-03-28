@@ -9,13 +9,15 @@ const Cart = () => {
   const [orderSuccess, setOrderSuccess] = useState(null);
   const [orderError, setOrderError] = useState(null);
   const [showContactForm, setShowContactForm] = useState(false);
+  const [needsDelivery, setNeedsDelivery] = useState(false);
   
   // Customer information
   const [customerInfo, setCustomerInfo] = useState({
     name: '',
     company: '',
     email: '',
-    phone: ''
+    phone: '',
+    deliveryAddress: ''
   });
   
   // Create refs for each cart item
@@ -41,36 +43,17 @@ const Cart = () => {
     }));
   };
   
-  // Empty cart view
-  if (cart.length === 0) {
-    return (
-      <div className="bg-white rounded-xl p-8 max-w-xl mx-auto shadow-md">
-        <div className="text-center py-8 text-gray-600">
-          <svg xmlns="http://www.w3.org/2000/svg" className="h-16 w-16 mx-auto text-gray-400 mb-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M3 3h2l.4 2M7 13h10l4-8H5.4M7 13L5.4 5M7 13l-2.293 2.293c-.63.63-.184 1.707.707 1.707H17m0 0a2 2 0 100 4 2 2 0 000-4zm-8 2a2 2 0 11-4 0 2 2 0 014 0z" />
-          </svg>
-          <h3 className="text-xl font-semibold mb-2">Your cart is empty</h3>
-          <p className="text-gray-500 mb-6">You haven't added any strainers to your cart yet.</p>
-          <button 
-            className="bg-purple-700 text-white py-3 px-6 rounded-lg transition-all hover:bg-purple-800 font-medium"
-            onClick={() => setCurrentStage(0)}
-          >
-            Start Selecting a Strainer
-          </button>
-        </div>
-      </div>
-    );
-  }
-  
-  // Handle remove item function
-  const handleRemoveItem = (itemId) => {
-    console.log('Removing item with ID:', itemId);
-    removeFromCart(itemId);
-  };
-  
-  // Show contact form
-  const handleRequestQuote = () => {
-    setShowContactForm(true);
+  // Handle delivery checkbox change
+  const handleDeliveryChange = (e) => {
+    setNeedsDelivery(e.target.checked);
+    
+    // If unchecked, clear the delivery address
+    if (!e.target.checked) {
+      setCustomerInfo(prev => ({
+        ...prev,
+        deliveryAddress: ''
+      }));
+    }
   };
   
   // Simulate sending an email
@@ -91,6 +74,7 @@ const Cart = () => {
             Company: ${customerInfo.company}
             Email: ${customerInfo.email}
             Phone: ${customerInfo.phone}
+            ${needsDelivery ? `Delivery Address: ${customerInfo.deliveryAddress}` : ''}
             
             Order Details:
             ${orderData.items.map((item, index) => `
@@ -127,6 +111,11 @@ const Cart = () => {
         throw new Error('Please enter a valid email address');
       }
       
+      // Validate delivery address if delivery is needed
+      if (needsDelivery && !customerInfo.deliveryAddress.trim()) {
+        throw new Error('Please enter a delivery address');
+      }
+      
       // Prepare order data
       const orderData = {
         items: cart.map(item => ({
@@ -142,7 +131,10 @@ const Cart = () => {
             return acc;
           }, {})
         })),
-        customer: customerInfo,
+        customer: {
+          ...customerInfo,
+          needsDelivery
+        },
         timestamp: new Date().toISOString()
       };
       
@@ -152,10 +144,16 @@ const Cart = () => {
       // Send email to the company
       const emailResponse = await sendEmailToCompany(orderData, customerInfo);
       
-      setOrderSuccess({
-        ...orderResponse,
+      // Set order success with mock data if not provided by API
+      const successData = {
+        ...(orderResponse || {}),
+        orderId: orderResponse?.orderId || `ORD-${Math.floor(Math.random() * 10000)}`,
+        estimatedResponse: orderResponse?.estimatedResponse || '24-48 hours',
         emailSent: emailResponse.success
-      });
+      };
+      
+      setOrderSuccess(successData);
+      setShowContactForm(false); // Ensure we exit the contact form view
       
       // Clear cart after successful submission
       setTimeout(() => {
@@ -168,6 +166,66 @@ const Cart = () => {
       setIsSubmitting(false);
     }
   };
+  
+  // Show contact form
+  const handleRequestQuote = () => {
+    setShowContactForm(true);
+  };
+  
+  // Handle remove item function
+  const handleRemoveItem = (itemId) => {
+    console.log('Removing item with ID:', itemId);
+    removeFromCart(itemId);
+  };
+  
+  // Success message after order submission
+  if (orderSuccess) {
+    return (
+      <div className="bg-white rounded-xl p-8 max-w-xl mx-auto shadow-md">
+        <div className="text-center py-8">
+          <div className="w-16 h-16 bg-green-100 text-green-600 rounded-full flex items-center justify-center mx-auto mb-4">
+            <svg xmlns="http://www.w3.org/2000/svg" className="h-8 w-8" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" />
+            </svg>
+          </div>
+          <h3 className="text-xl font-semibold text-gray-800 mb-2">Quotation Request Submitted!</h3>
+          <p className="text-gray-600 mb-2">Your request has been successfully submitted.</p>
+          <p className="text-gray-600 mb-2">Order ID: {orderSuccess.orderId}</p>
+          <p className="text-gray-600 mb-6">A confirmation has been sent to your email.</p>
+          <p className="text-sm text-gray-500 mb-6">
+            You will receive a response within {orderSuccess.estimatedResponse}.
+          </p>
+          <button 
+            className="bg-purple-700 text-white py-3 px-6 rounded-lg transition-all hover:bg-purple-800 font-medium"
+            onClick={() => setCurrentStage(0)}
+          >
+            Start a New Selection
+          </button>
+        </div>
+      </div>
+    );
+  }
+  
+  // Empty cart view
+  if (cart.length === 0) {
+    return (
+      <div className="bg-white rounded-xl p-8 max-w-xl mx-auto shadow-md">
+        <div className="text-center py-8 text-gray-600">
+          <svg xmlns="http://www.w3.org/2000/svg" className="h-16 w-16 mx-auto text-gray-400 mb-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M3 3h2l.4 2M7 13h10l4-8H5.4M7 13L5.4 5M7 13l-2.293 2.293c-.63.63-.184 1.707.707 1.707H17m0 0a2 2 0 100 4 2 2 0 000-4zm-8 2a2 2 0 11-4 0 2 2 0 014 0z" />
+          </svg>
+          <h3 className="text-xl font-semibold mb-2">Your cart is empty</h3>
+          <p className="text-gray-500 mb-6">You haven't added any strainers to your cart yet.</p>
+          <button 
+            className="bg-purple-700 text-white py-3 px-6 rounded-lg transition-all hover:bg-purple-800 font-medium"
+            onClick={() => setCurrentStage(0)}
+          >
+            Start Selecting a Strainer
+          </button>
+        </div>
+      </div>
+    );
+  }
   
   // Customer information form
   if (showContactForm) {
@@ -247,6 +305,39 @@ const Cart = () => {
             />
           </div>
           
+          <div className="mb-6">
+            <div className="flex items-center mb-2">
+              <input
+                type="checkbox"
+                id="needsDelivery"
+                checked={needsDelivery}
+                onChange={handleDeliveryChange}
+                className="w-4 h-4 text-purple-700 border-gray-300 rounded focus:ring-purple-500"
+              />
+              <label htmlFor="needsDelivery" className="ml-2 text-sm font-medium text-gray-700">
+                I need delivery to my address
+              </label>
+            </div>
+            
+            {needsDelivery && (
+              <div className="mt-3">
+                <label htmlFor="deliveryAddress" className="block text-sm font-medium text-gray-700 mb-1">
+                  Delivery Address <span className="text-red-500">*</span>
+                </label>
+                <textarea
+                  id="deliveryAddress"
+                  name="deliveryAddress"
+                  value={customerInfo.deliveryAddress}
+                  onChange={handleInputChange}
+                  className="w-full p-3 border-2 border-gray-200 rounded-lg focus:border-purple-700 focus:outline-none"
+                  placeholder="Enter your full delivery address"
+                  rows="3"
+                  required={needsDelivery}
+                ></textarea>
+              </div>
+            )}
+          </div>
+          
           <div className="flex gap-3">
             <button
               type="button"
@@ -277,34 +368,6 @@ const Cart = () => {
             </button>
           </div>
         </form>
-      </div>
-    );
-  }
-  
-  // Success message after order submission
-  if (orderSuccess) {
-    return (
-      <div className="bg-white rounded-xl p-8 max-w-xl mx-auto shadow-md">
-        <div className="text-center py-8">
-          <div className="w-16 h-16 bg-green-100 text-green-600 rounded-full flex items-center justify-center mx-auto mb-4">
-            <svg xmlns="http://www.w3.org/2000/svg" className="h-8 w-8" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" />
-            </svg>
-          </div>
-          <h3 className="text-xl font-semibold text-gray-800 mb-2">Quotation Request Submitted!</h3>
-          <p className="text-gray-600 mb-2">Your request has been successfully submitted.</p>
-          <p className="text-gray-600 mb-2">Order ID: {orderSuccess.orderId}</p>
-          <p className="text-gray-600 mb-6">A confirmation has been sent to your email.</p>
-          <p className="text-sm text-gray-500 mb-6">
-            You will receive a response within {orderSuccess.estimatedResponse}.
-          </p>
-          <button 
-            className="bg-purple-700 text-white py-3 px-6 rounded-lg transition-all hover:bg-purple-800 font-medium"
-            onClick={() => setCurrentStage(0)}
-          >
-            Start a New Selection
-          </button>
-        </div>
       </div>
     );
   }
