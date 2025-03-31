@@ -1,0 +1,29 @@
+# Enable rewrite engine
+RewriteEngine On
+
+# If the request is for an actual file or directory, skip the rewriting rules
+RewriteCond %{REQUEST_FILENAME} -f [OR]
+RewriteCond %{REQUEST_FILENAME} -d
+RewriteRule ^ - [L]
+
+# Rewrite API requests to index.php
+RewriteRule ^(.*)$ index.php [QSA,L]
+
+# Set some headers for security
+<IfModule mod_headers.c>
+    Header set X-Content-Type-Options "nosniff"
+    Header set X-XSS-Protection "1; mode=block"
+    Header set X-Frame-Options "SAMEORIGIN"
+</IfModule>
+
+# Disable directory browsing
+Options -Indexes
+
+# PHP settings
+<IfModule mod_php7.c>
+    php_flag display_errors Off
+    php_value upload_max_filesize 10M
+    php_value post_max_size 10M
+    php_value max_execution_time 300
+    php_value max_input_time 300
+</IfModule>
