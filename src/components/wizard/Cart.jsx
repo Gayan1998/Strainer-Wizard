@@ -56,46 +56,6 @@ const Cart = () => {
     }
   };
   
-  // Simulate sending an email
-  const sendEmailToCompany = async (orderData, customerInfo) => {
-    console.log('Sending email to dev@prpl.com.au');
-    
-    // In a real implementation, this would be an API call to your backend
-    return new Promise((resolve) => {
-      setTimeout(() => {
-        console.log('Email content:', {
-          to: 'dev@prpl.com.au',
-          subject: `Quotation Request from ${customerInfo.name} at ${customerInfo.company}`,
-          body: `
-            New quotation request details:
-            
-            Customer Information:
-            Name: ${customerInfo.name}
-            Company: ${customerInfo.company}
-            Email: ${customerInfo.email}
-            Phone: ${customerInfo.phone}
-            ${needsDelivery ? `Delivery Address: ${customerInfo.deliveryAddress}` : ''}
-            
-            Order Details:
-            ${orderData.items.map((item, index) => `
-              Item ${index + 1}: ${item.productName}
-              ${item.isSpecialOrder ? '(Special Order)' : ''}
-              Specifications:
-              ${Object.entries(item.selections).map(([key, value]) => `- ${key}: ${value}`).join('\n')}
-            `).join('\n\n')}
-            
-            Timestamp: ${new Date().toLocaleString()}
-          `
-        });
-        
-        resolve({
-          success: true,
-          message: 'Email sent successfully',
-        });
-      }, 1500);
-    });
-  };
-  
   // Handle form submission
   const handleSubmitOrder = async (e) => {
     if (e) e.preventDefault();
@@ -116,7 +76,7 @@ const Cart = () => {
         throw new Error('Please enter a delivery address');
       }
       
-      // Prepare order data
+      // Prepare order data - using the updated format
       const orderData = {
         items: cart.map(item => ({
           productId: item.product.id,
@@ -141,15 +101,11 @@ const Cart = () => {
       // Submit order to the API
       const orderResponse = await submitOrder(orderData);
       
-      // Send email to the company
-      const emailResponse = await sendEmailToCompany(orderData, customerInfo);
-      
-      // Set order success with mock data if not provided by API
+      // Set order success with data from API response
       const successData = {
         ...(orderResponse || {}),
         orderId: orderResponse?.orderId || `ORD-${Math.floor(Math.random() * 10000)}`,
-        estimatedResponse: orderResponse?.estimatedResponse || '24-48 hours',
-        emailSent: emailResponse.success
+        estimatedResponse: orderResponse?.estimatedResponse || '24-48 hours'
       };
       
       setOrderSuccess(successData);

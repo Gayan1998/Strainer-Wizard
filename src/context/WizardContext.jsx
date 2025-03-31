@@ -1,6 +1,7 @@
 import React, { createContext, useState, useContext, useEffect, useCallback } from 'react';
 import { stages } from '../data/stages';
 import { fetchProducts } from '../services/api';
+import { toast } from 'react-toastify'; // Import toast from react-toastify
 
 // Create the context with named export
 export const WizardContext = createContext();
@@ -147,6 +148,7 @@ export function WizardProvider({ children }) {
     } catch (err) {
       console.error('Error fetching products:', err);
       setError(err.message || 'Failed to fetch products');
+      toast.error('Error fetching products: ' + (err.message || 'Failed to fetch products'));
       setHasFetched(true);
       return [];
     } finally {
@@ -169,8 +171,8 @@ export function WizardProvider({ children }) {
 
     setCart(prevCart => [...prevCart, cartItem]);
     
-    // Show success message (this would be better with a toast component)
-    alert(`Product has been added to your cart.`);
+    // Show success message with toast instead of alert
+    toast.success('Product has been added to your cart.');
   };
   
   // Add special order to cart without price
@@ -206,8 +208,8 @@ export function WizardProvider({ children }) {
 
     setCart(prevCart => [...prevCart, cartItem]);
     
-    // Show success message
-    alert('Special order has been added to your cart.');
+    // Show success message with toast instead of alert
+    toast.success('Special order has been added to your cart.');
   };
 
   // Remove item from cart - no redirection
@@ -219,6 +221,9 @@ export function WizardProvider({ children }) {
       const updatedCart = prevCart.filter(item => item.id !== itemId);
       return updatedCart;
     });
+    
+    // Show removal notification
+    toast.info('Item removed from cart.');
   };
 
   // Add new strainer (after completing one)
@@ -227,6 +232,7 @@ export function WizardProvider({ children }) {
     setTimeout(() => {
       resetWizard();
       setIsTransitioning(false);
+      toast.info('Started configuring a new strainer.');
     }, 150);
   };
 

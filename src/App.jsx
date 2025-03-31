@@ -12,6 +12,8 @@ import Cart from './components/wizard/Cart';
 import { stages } from './data/stages';
 import { useWizard } from './hooks/useWizard';
 import './transitions.css';
+import { ToastContainer } from 'react-toastify';
+import 'react-toastify/dist/ReactToastify.css';
 
 const WizardContent = () => {
   const { currentStage, cart } = useWizard();
@@ -111,6 +113,7 @@ const App = () => {
   return (
     <WizardProvider>
       <WizardContent />
+      <ToastContainer position="top-right" autoClose={3000} />
     </WizardProvider>
   );
 };

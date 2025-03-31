@@ -7,6 +7,9 @@ import { API_CONFIG, buildApiUrl, shouldUseMockData } from '../config/api.config
  */
 export const fetchProducts = async (filters) => {
   try {
+    // Add debugging for the filters
+    console.log('Fetching products with filters:', filters);
+    
     // Build query parameters based on filters
     const queryParams = new URLSearchParams();
     if (filters.type) queryParams.append('type', filters.type);
@@ -16,6 +19,7 @@ export const fetchProducts = async (filters) => {
     if (filters.pressure) queryParams.append('pressure', filters.pressure);
     
     const url = `${buildApiUrl(API_CONFIG.ENDPOINTS.PRODUCTS)}?${queryParams.toString()}`;
+    console.log('API URL:', url);
     
     // For development/testing - use mock data if configured
     if (shouldUseMockData()) {
@@ -38,31 +42,54 @@ export const fetchProducts = async (filters) => {
     };
     
     // Make the API call
+    console.log('Sending API request with options:', options);
     const response = await fetch(url, options);
     clearTimeout(timeoutId); // Clear the timeout if request completes
     
+    console.log('API response status:', response.status);
+    
     if (!response.ok) {
+      // Get the response text for better error reporting
+      const errorText = await response.text();
+      console.error('API error response text:', errorText);
       throw new Error(`API error: ${response.status} ${response.statusText}`);
     }
     
+    // Inside your fetchProducts function
     // More resilient response handling
-        const data = await response.json();
-        return data.data || [];
-       // return Array.isArray(data) ? data : 
-      // (data.status === 'success' && Array.isArray(data.data) ? data.data : []);
-    // Ensure we always return an array, even if the API returns null/undefined
+    const data = await response.json();
+    console.log('API response data:', data);
+
+    // Handle different response formats
+    if (Array.isArray(data)) {
+      return data;
+    } else if (data.data && Array.isArray(data.data)) {
+      return data.data;
+    } else if (data.products && Array.isArray(data.products)) {
+      return data.products;
+    } else {
+      console.warn('Unexpected API response format:', data);
+      return []; // Return empty array as fallback
+    }
   } catch (error) {
     // Handle abort errors specifically
     if (error.name === 'AbortError') {
       throw new Error('Request timed out. Please try again.');
     }
     console.error('Error fetching products:', error);
+    
+    // Use mock data as fallback if real API fails
+    if (API_CONFIG.USE_MOCK_ON_FAILURE) {
+      console.log('API call failed, falling back to mock data');
+      return getMockProducts(filters);
+    }
+    
     throw error;
   }
 };
 
 /**
- * Submit an order to the API
+ * Submit an order to the API with enhanced error handling
  * @param {Object} orderData - The order data to submit
  * @returns {Promise} - Promise resolving to the order confirmation
  */
@@ -75,12 +102,11 @@ export const submitOrder = async (orderData) => {
       console.log('Order data:', orderData);
       
       // Send mock email
-      if (orderData.customer) {
-        await sendEmail({
-          to: 'dev@prpl.com.au',
-          subject: `Quotation Request from ${orderData.customer.name} at ${orderData.customer.company}`,
-          body: formatEmailBody(orderData)
-        });
+      try {
+        await sendEmail(orderData);
+      } catch (emailError) {
+        console.error('Error sending email (mock):', emailError);
+        // Continue with order processing even if email fails
       }
       
       return getMockOrderConfirmation(orderData);
@@ -97,22 +123,27 @@ export const submitOrder = async (orderData) => {
       signal: controller.signal,
     };
     
+    console.log('Submitting order to:', url);
+    console.log('Order data being sent:', orderData);
+    
     const response = await fetch(url, options);
     clearTimeout(timeoutId);
     
     if (!response.ok) {
+      const errorText = await response.text();
+      console.error('Order API error response:', errorText);
       throw new Error(`API error: ${response.status} ${response.statusText}`);
     }
     
     const data = await response.json();
     
     // Send email after successful order submission
-    if (orderData.customer) {
-      await sendEmail({
-        to: 'dev@prpl.com.au',
-        subject: `Quotation Request from ${orderData.customer.name} at ${orderData.customer.company}`,
-        body: formatEmailBody(orderData)
-      });
+    // But don't fail the overall operation if email sending fails
+    try {
+      await sendEmail(orderData);
+    } catch (emailError) {
+      console.error('Error sending order confirmation email:', emailError);
+      // Continue despite email error
     }
     
     return data;
@@ -126,46 +157,61 @@ export const submitOrder = async (orderData) => {
 };
 
 /**
- * Send an email (mock implementation)
- * @param {Object} emailData - The email data
+ * Send an email with order data to the backend
+ * @param {Object} orderData - The order data to include in the email
  * @returns {Promise} - Promise resolving when email is sent
  */
-export const sendEmail = async (emailData) => {
-  if (shouldUseMockData()) {
-    // Log email content for development
-    console.log('EMAIL WOULD BE SENT:');
-    console.log('To:', emailData.to);
-    console.log('Subject:', emailData.subject);
-    console.log('Body:', emailData.body);
+export const sendEmail = async (orderData) => {
+  try {
+    // For development/testing - use mock data if configured
+    if (shouldUseMockData()) {
+      console.log('EMAIL WOULD BE SENT (MOCK):', orderData);
+      // Simulate API call delay
+      return new Promise(resolve => {
+        setTimeout(() => {
+          resolve({ success: true, message: 'Email sent successfully' });
+        }, 500);
+      });
+    }
     
-    // Simulate API call delay
-    return new Promise(resolve => {
-      setTimeout(() => {
-        resolve({ success: true, message: 'Email sent successfully' });
-      }, 500);
-    });
+    // Build email data from order data
+    const emailData = {
+      to: 'dev@prpl.com.au',
+      subject: `Quotation Request from ${orderData.customer.name} at ${orderData.customer.company}`,
+      body: formatEmailBody(orderData),
+      // Include the raw order data for the server to use if needed
+      orderData: orderData
+    };
+    
+    // In production, this would call your email sending API
+    const url = buildApiUrl(API_CONFIG.ENDPOINTS.EMAIL);
+    
+    const options = {
+      method: 'POST',
+      headers: API_CONFIG.HEADERS,
+      body: JSON.stringify(emailData)
+    };
+    
+    console.log('Sending email request to:', url);
+    console.log('Email data:', emailData);
+    
+    const response = await fetch(url, options);
+    
+    if (!response.ok) {
+      const errorText = await response.text();
+      console.error('Email API error response:', errorText);
+      throw new Error(`Email API error: ${response.status} ${response.statusText}`);
+    }
+    
+    return await response.json();
+  } catch (error) {
+    console.error('Error sending email:', error);
+    throw error;
   }
-  
-  // In production, this would call your email sending API
-  const url = buildApiUrl(API_CONFIG.ENDPOINTS.EMAIL);
-  
-  const options = {
-    method: 'POST',
-    headers: API_CONFIG.HEADERS,
-    body: JSON.stringify(emailData)
-  };
-  
-  const response = await fetch(url, options);
-  
-  if (!response.ok) {
-    throw new Error(`Email API error: ${response.status} ${response.statusText}`);
-  }
-  
-  return await response.json();
 };
 
 /**
- * Format email body based on order data
+ * Format email body based on the updated order data format
  * @param {Object} orderData - The order data
  * @returns {String} - Formatted email body
  */
@@ -181,16 +227,26 @@ Name: ${customer.name || 'N/A'}
 Company: ${customer.company || 'N/A'}
 Email: ${customer.email || 'N/A'}
 Phone: ${customer.phone || 'N/A'}
+`;
 
-Order Details:
+  // Add the new delivery address field if present
+  if (customer.deliveryAddress) {
+    emailBody += `Delivery Address: ${customer.deliveryAddress}\n`;
+  }
+  
+  // Add delivery preference
+  emailBody += `Needs Delivery: ${customer.needsDelivery ? 'Yes' : 'No'}\n\n`;
+
+  // Format order items with the new selections structure
+  emailBody += `Order Details:
 ${items.map((item, index) => `
-Item ${index + 1}: ${item.productName}
+Item ${index + 1}: ${item.productName || 'N/A'} (ID: ${item.productId || 'N/A'})
 ${item.isSpecialOrder ? '(Special Order)' : ''}
 Specifications:
-${Object.entries(item.selections).map(([key, value]) => `- ${key}: ${value}`).join('\n')}
+${Object.entries(item.selections || {}).map(([key, value]) => `- ${key}: ${value}`).join('\n')}
 `).join('\n')}
 
-Timestamp: ${new Date().toLocaleString()}
+Timestamp: ${new Date(orderData.timestamp || Date.now()).toLocaleString()}
   `;
   
   return emailBody;
@@ -333,7 +389,8 @@ const getMockOrderConfirmation = (orderData) => {
         message: 'Your quotation request has been successfully submitted',
         estimatedResponse: '24 hours',
         items: orderData.items,
-        timestamp: new Date().toISOString()
+        customer: orderData.customer,
+        timestamp: orderData.timestamp || new Date().toISOString()
       });
     }, 1200); // Simulate longer network delay for order submission
   });
