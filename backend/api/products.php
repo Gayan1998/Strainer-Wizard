@@ -107,13 +107,16 @@ try {
             'connection' => $product['flange_type'],
             'size' => $product['flange_size'],
             'pressure' => $product['operating_pressure'],
-            'description' => $product['name'] . ' - ' . $product['product_type'],
+            // Use product_description if available, otherwise generate description
+            'description' => $product['product_description'] ?? 
+                ($product['name'] . ' - ' . $product['product_type']),
             'image' => $product['image_url'] ?? '/api/placeholder/200/200',
             'specs' => [
                 'screenSize' => $product['screen_size'] ?? 'Standard',
                 'temperature' => $product['operating_temperature'] ?? 'Standard',
                 'weight' => 'Varies by model'
             ]
+            // Note: Intentionally NOT including price here
         ];
     }
     

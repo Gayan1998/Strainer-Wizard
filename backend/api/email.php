@@ -95,7 +95,7 @@ function send_email_enhanced($to, $subject, $body, $from_name = null, $from_emai
  * @param array $orderData The order data from the request
  * @return string Formatted email body
  */
-function format_order_email($orderData) {
+function email_api_format_order($orderData) {
     // Extract data
     $customer = $orderData['customer'] ?? [];
     $items = $orderData['items'] ?? [];

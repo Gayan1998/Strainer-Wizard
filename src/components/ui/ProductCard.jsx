@@ -1,3 +1,4 @@
+// src/components/ui/ProductCard.jsx
 import React from 'react';
 
 const ProductCard = ({ product, onAddToCart }) => {
@@ -12,7 +13,12 @@ const ProductCard = ({ product, onAddToCart }) => {
       </div>
       <div className="p-6 flex flex-col flex-grow">
         <h3 className="text-xl font-semibold text-gray-800 mb-2">{product.name}</h3>
-        <p className="text-gray-600 text-sm mb-4">{product.description}</p>
+        
+        {/* Display product description if available */}
+        {product.description && (
+          <p className="text-gray-600 text-sm mb-4">{product.description}</p>
+        )}
+        
         <div className="bg-gray-50 p-4 rounded-lg mb-4 text-sm">
           <div><strong>Screen Size:</strong> {product.specs.screenSize}</div>
           <div><strong>Flow Rate:</strong> {product.specs.flowRate}</div>

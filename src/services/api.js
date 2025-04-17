@@ -97,19 +97,29 @@ export const submitOrder = async (orderData) => {
   try {
     const url = buildApiUrl(API_CONFIG.ENDPOINTS.ORDERS);
     
+    // Enhance order data to ensure product IDs are included and add Excel generation flag
+    const enhancedOrderData = {
+      ...orderData,
+      items: orderData.items.map(item => ({
+        ...item,
+        productId: item.productId || (item.product && item.product.id) || null,
+      })),
+      generateExcel: true // Flag to indicate Excel quotation should be generated
+    };
+    
     if (shouldUseMockData()) {
       console.log('Using mock data - in production, this would call:', url);
-      console.log('Order data:', orderData);
+      console.log('Enhanced order data:', enhancedOrderData);
       
       // Send mock email
       try {
-        await sendEmail(orderData);
+        await sendEmail(enhancedOrderData);
       } catch (emailError) {
         console.error('Error sending email (mock):', emailError);
         // Continue with order processing even if email fails
       }
       
-      return getMockOrderConfirmation(orderData);
+      return getMockOrderConfirmation(enhancedOrderData);
     }
     
     // Set up fetch options
@@ -119,12 +129,12 @@ export const submitOrder = async (orderData) => {
     const options = {
       method: 'POST',
       headers: API_CONFIG.HEADERS,
-      body: JSON.stringify(orderData),
+      body: JSON.stringify(enhancedOrderData), // Use enhanced data instead of original
       signal: controller.signal,
     };
     
     console.log('Submitting order to:', url);
-    console.log('Order data being sent:', orderData);
+    console.log('Enhanced order data being sent:', enhancedOrderData);
     
     const response = await fetch(url, options);
     clearTimeout(timeoutId);
@@ -137,10 +147,10 @@ export const submitOrder = async (orderData) => {
     
     const data = await response.json();
     
-    // Send email after successful order submission
-    // But don't fail the overall operation if email sending fails
+    // Note: With the new workflow, email with Excel attachment should be handled by backend
+    // This client-side email could be removed or modified based on your needs
     try {
-      await sendEmail(orderData);
+      await sendEmail(enhancedOrderData);
     } catch (emailError) {
       console.error('Error sending order confirmation email:', emailError);
       // Continue despite email error

@@ -160,18 +160,20 @@ export function WizardProvider({ children }) {
   const addProductToCart = (productId) => {
     const product = products.find(p => p.id === productId);
     if (!product) return;
-
+  
     const cartItem = {
       id: Date.now(), // Ensure unique ID using timestamp
+      productId: product.id, // Store explicit product ID
       product: product,
       selections: [...selections.history],
       timestamp: new Date().toISOString(),
-      isSpecialOrder: false
+      isSpecialOrder: false,
+      quantity: 1 // Initialize with quantity of 1
     };
-
+  
     setCart(prevCart => [...prevCart, cartItem]);
     
-    // Show success message with toast instead of alert
+    // Show success message with toast
     toast.success('Product has been added to your cart.');
   };
   
@@ -199,11 +201,12 @@ export function WizardProvider({ children }) {
     };
     
     const cartItem = {
-      id: Date.now(), // Ensure unique ID using timestamp
+      id: Date.now(),
       product: specialProduct,
       selections: formattedSelections,
       timestamp: new Date().toISOString(),
-      isSpecialOrder: true
+      isSpecialOrder: true,
+      quantity: 1 // Initialize with quantity of 1
     };
 
     setCart(prevCart => [...prevCart, cartItem]);

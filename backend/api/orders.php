@@ -1,5 +1,6 @@
 <?php
 require_once __DIR__ . '/../models/Order.php';
+require_once __DIR__ . '/../vendor/autoload.php'; // For PHPSpreadsheet
 
 // For debugging - log incoming order requests
 error_log('Order API request received: ' . file_get_contents('php://input'));
@@ -41,12 +42,18 @@ switch ($method) {
             
             // Validate each item has required fields
             foreach ($data['items'] as $index => $item) {
-                if (empty($item['productId'])) {
+                // Existing validations
+                if (empty($item['productId']) && !(isset($item['isSpecialOrder']) && $item['isSpecialOrder'])) {
                     Response::json_error("Item #" . ($index + 1) . " is missing a product ID", 400);
                 }
                 
                 if (empty($item['selections']) || !is_array($item['selections'])) {
                     Response::json_error("Item #" . ($index + 1) . " is missing selections", 400);
+                }
+                
+                // Add quantity validation
+                if (isset($item['quantity']) && (!is_numeric($item['quantity']) || $item['quantity'] < 1)) {
+                    Response::json_error("Item #" . ($index + 1) . " has an invalid quantity", 400);
                 }
             }
             
@@ -65,10 +72,24 @@ switch ($method) {
                 throw new Exception('Failed to create order in database');
             }
             
-            // Send email notification
+            // Generate Excel quotation using the updated method from Order class
+            $quotation_path = null;
+            try {
+                $quotation_path = $order->generateExcelQuotation($data, $order_id);
+                error_log('Excel quotation generated: ' . $quotation_path);
+            } catch (Exception $e) {
+                error_log('Failed to generate Excel quotation: ' . $e->getMessage());
+                // Continue even if Excel generation fails
+            }
+            
+            // Send email notification with or without attachment
             $email_sent = false;
             try {
-                $email_sent = $order->sendOrderEmail($data);
+                if ($quotation_path && file_exists($quotation_path)) {
+                    $email_sent = $order->sendOrderEmailWithAttachment($data, $quotation_path);
+                } else {
+                    $email_sent = $order->sendOrderEmail($data);
+                }
             } catch (Exception $e) {
                 error_log('Failed to send order email: ' . $e->getMessage());
                 // Continue with response even if email fails
@@ -83,7 +104,8 @@ switch ($method) {
                 'items' => $data['items'],
                 'customer' => $data['customer'],
                 'timestamp' => $data['timestamp'],
-                'emailSent' => $email_sent
+                'emailSent' => $email_sent,
+                'quotationGenerated' => !empty($quotation_path) && file_exists($quotation_path)
             ];
             
             Response::json_success($response);

@@ -56,6 +56,24 @@ const Cart = () => {
     }
   };
   
+  // Handle quantity change for an item
+  const handleQuantityChange = (itemId, newQuantity) => {
+    // Ensure quantity is at least 1 and is a number
+    const quantity = Math.max(1, parseInt(newQuantity) || 1);
+    
+    setCart(prevCart => {
+      return prevCart.map(item => {
+        if (item.id === itemId) {
+          return { 
+            ...item, 
+            quantity: quantity 
+          };
+        }
+        return item;
+      });
+    });
+  };
+  
   // Handle form submission
   const handleSubmitOrder = async (e) => {
     if (e) e.preventDefault();
@@ -79,9 +97,10 @@ const Cart = () => {
       // Prepare order data - using the updated format
       const orderData = {
         items: cart.map(item => ({
-          productId: item.product.id,
+          productId: item.productId || (item.product && item.product.id) || null,
           productName: item.product.name,
           isSpecialOrder: item.isSpecialOrder || false,
+          quantity: item.quantity || 1, // Include the quantity
           selections: item.selections.reduce((acc, sel) => {
             // Format custom options for the API
             const value = sel.optionName;
@@ -95,7 +114,8 @@ const Cart = () => {
           ...customerInfo,
           needsDelivery
         },
-        timestamp: new Date().toISOString()
+        timestamp: new Date().toISOString(),
+        generateExcel: true // Flag to indicate Excel quotation generation
       };
       
       // Submit order to the API
@@ -328,7 +348,7 @@ const Cart = () => {
     );
   }
   
-  // Cart with items - NO PRICES anywhere
+  // Cart with items
   return (
     <div className="bg-white rounded-xl p-8 max-w-xl mx-auto shadow-md">
       <h2 className="text-2xl font-bold text-gray-800 mb-6 text-center">Your Cart</h2>
@@ -349,6 +369,33 @@ const Cart = () => {
                     Special Order
                   </span>
                 )}
+              </div>
+              
+              {/* Quantity selector */}
+              <div className="flex items-center mb-4">
+                <label htmlFor={`quantity-${item.id}`} className="mr-2 text-gray-600">Quantity:</label>
+                <div className="flex items-center">
+                  <button 
+                    className="bg-gray-200 text-gray-700 hover:bg-gray-300 h-8 w-8 rounded-l flex items-center justify-center"
+                    onClick={() => handleQuantityChange(item.id, (item.quantity || 1) - 1)}
+                  >
+                    -
+                  </button>
+                  <input
+                    id={`quantity-${item.id}`}
+                    type="number"
+                    min="1"
+                    value={item.quantity || 1}
+                    onChange={(e) => handleQuantityChange(item.id, e.target.value)}
+                    className="h-8 w-12 border-y border-gray-200 text-center"
+                  />
+                  <button 
+                    className="bg-gray-200 text-gray-700 hover:bg-gray-300 h-8 w-8 rounded-r flex items-center justify-center"
+                    onClick={() => handleQuantityChange(item.id, (item.quantity || 1) + 1)}
+                  >
+                    +
+                  </button>
+                </div>
               </div>
               
               {/* Product specifications */}

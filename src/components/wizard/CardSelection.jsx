@@ -121,11 +121,13 @@ const CardSelection = ({ stage, stageIndex }) => {
                 }`}
                 onClick={() => handleCardSelect(option.id)}
               >
-                <img 
-                  src={option.image} 
-                  alt={option.name} 
-                  className="w-36 h-36 object-contain mb-5 transition-transform duration-200"
-                />
+                <div className="w-36 h-36 flex items-center justify-center mb-5">
+                  <img 
+                    src={option.image} 
+                    alt={option.name} 
+                    className="w-full h-full object-contain transition-transform duration-200"
+                  />
+                </div>
                 <h2 className="text-xl font-semibold text-gray-800">{option.name}</h2>
                 
                 {/* Display description for material options */}
